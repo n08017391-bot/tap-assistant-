@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Assistant TAP</title>
+<style>
+:root{--bg:#f3f6f7;--card:#fff;--ink:#12292f;--mute:#5a7077;--line:#d3dde0;--acc:#0b6e7a;--acc2:#e8f3f4;--warn:#a85a00;--warnbg:#fdf1e0;--ok:#1d6b3a;--okbg:#e5f4ea;--bad:#a3262a;--badbg:#fbe9e9;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1a1d;--card:#15262a;--ink:#e3eef0;--mute:#93aab0;--line:#2b4248;--acc:#4fc3d1;--acc2:#183a40;--warn:#f0b36a;--warnbg:#3a2a12;--ok:#7fd49b;--okbg:#14301f;--bad:#f09a9d;--badbg:#3b1b1c}}
+:root[data-theme="dark"]{--bg:#0e1a1d;--card:#15262a;--ink:#e3eef0;--mute:#93aab0;--line:#2b4248;--acc:#4fc3d1;--acc2:#183a40;--warn:#f0b36a;--warnbg:#3a2a12;--ok:#7fd49b;--okbg:#14301f;--bad:#f09a9d;--badbg:#3b1b1c}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Segoe UI",system-ui,-apple-system,"Noto Naskh Arabic",sans-serif}
+header{padding:28px 18px 18px;max-width:900px;margin:0 auto}
+h1{font-size:1.7rem;line-height:1.2;margin:0 0 6px;font-weight:700;letter-spacing:-.01em}
+header p{margin:0;color:var(--mute);max-width:60ch}
+main{max-width:900px;margin:0 auto;padding:0 14px 40px;display:grid;gap:16px}
+section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
+h2{font-size:1.1rem;margin:0 0 12px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+h2 small{color:var(--mute);font-weight:400;font-size:.85rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+label{display:block;font-size:.85rem;color:var(--mute);margin-bottom:3px}
+input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.seg{display:flex;gap:8px}
+.seg label{flex:1;margin:0;border:1px solid var(--line);border-radius:6px;padding:10px;text-align:center;color:var(--ink);cursor:pointer;font-size:.95rem}
+.seg input{display:none}
+.seg input:checked+span{font-weight:700;color:var(--acc)}
+.seg label:has(input:checked){background:var(--acc2);border-color:var(--acc)}
+.chk{display:grid;gap:6px}
+.chk label{display:flex;gap:8px;align-items:center;color:var(--ink);font-size:.95rem;margin:0}
+.chk input{width:auto}
+.imc{font-weight:700;color:var(--acc)}
+button{font:inherit;padding:11px 16px;border-radius:6px;border:1px solid var(--acc);background:var(--acc);color:#fff;font-weight:600;cursor:pointer}
+[data-theme="dark"] button.p,:root:not([data-theme="light"]) button.p{color:#06262b}
+.lang{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}.lang button{padding:6px 12px;background:transparent;color:var(--acc)}.lang button[aria-pressed=true]{background:var(--acc);color:#fff}
+button.s{background:transparent;color:var(--acc)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.note{border-radius:6px;padding:10px 12px;margin:8px 0;font-size:.93rem;border-left:4px solid}
+.note.ok{background:var(--okbg);border-color:var(--ok)}
+.note.warn{background:var(--warnbg);border-color:var(--warn)}
+.note.bad{background:var(--badbg);border-color:var(--bad)}
+.note.info{background:var(--acc2);border-color:var(--acc)}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.88rem;min-width:620px}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:start;white-space:nowrap}
+th{color:var(--mute);font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.stat{border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.stat b{display:block;font-size:1rem;margin-bottom:4px}
+.stat span{display:block;font-size:.9rem;color:var(--mute)}
+canvas{width:100%;height:auto;border:1px solid var(--line);border-radius:6px;background:#000;cursor:crosshair}.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:12px}input[type=range]{padding:0}.foot{color:var(--mute);font-size:.82rem;max-width:900px;margin:0 auto;padding:0 18px 30px}
+ul{margin:6px 0;padding-left:20px}
+</style>
+</head>
+<body>
+<header>
+<h1 data-i="title"></h1>
+<p data-i="sub"></p>
+<div class="lang" id="lang">
+<button data-l="fr">Français</button><button data-l="en">English</button><button data-l="de">Deutsch</button><button data-l="ar">العربية</button>
+</div>
+</header>
+<main>
+<section>
+<h2 data-i="s1"></h2>
+<div class="grid">
+<div><label for="code" data-i="code"></label><input id="code" placeholder="P-014"></div>
+<div><label for="age" data-i="age"></label><input id="age" type="number" min="0" max="120" inputmode="numeric"></div>
+<div><label for="sexe" data-i="sex"></label><select id="sexe"><option>F</option><option>M</option></select></div>
+<div><label for="poids" data-i="w"></label><input id="poids" type="number" min="1" max="300" inputmode="decimal"></div>
+<div><label for="taille" data-i="h"></label><input id="taille" type="number" min="30" max="250" inputmode="numeric"></div>
+<div><label data-i="imc"></label><div class="imc" id="imc" style="padding:10px 0" dir="ltr">–</div></div>
+</div>
+</section>
+<section>
+<h2 data-i="s2"></h2>
+<label data-i="type"></label>
+<div class="seg">
+<label><input type="radio" name="ctx" value="U"><span data-i="urg"></span></label>
+<label><input type="radio" name="ctx" value="S" checked><span data-i="suivi"></span></label>
+</div>
+<div class="grid" style="margin-top:12px">
+<div><label for="patho" data-i="patho"></label><select id="patho"></select></div>
+<div><label for="contraste" data-i="contrast"></label><select id="contraste"></select></div>
+<div><label for="egfr" data-i="g_egfr"></label><input id="egfr" type="number" inputmode="decimal"></div>
+<div><label for="conc" data-i="g_conc"></label><select id="conc"><option value="300">300 mgI/mL</option><option value="350" selected>350 mgI/mL</option></select></div>
+</div>
+</section>
+<section>
+<h2 data-i="s3"></h2>
+<div class="chk" id="pre">
+<label><input type="checkbox"><span data-i="c1"></span></label>
+<label><input type="checkbox"><span data-i="c2"></span></label>
+<label><input type="checkbox"><span data-i="c3"></span></label>
+<label><input type="checkbox"><span data-i="c4"></span></label>
+<label><input type="checkbox"><span data-i="c5"></span></label>
+<label><input type="checkbox"><span data-i="c6"></span></label>
+</div>
+</section>
+<section>
+<h2 data-i="s4"></h2>
+<div class="grid" dir="auto">
+<div><label for="kv">kV</label><input id="kv" type="number" inputmode="numeric"></div>
+<div><label for="mas">mAs</label><input id="mas" type="number" inputmode="numeric"></div>
+<div><label for="ep" data-i="ep"></label><input id="ep" type="number" step="0.1" inputmode="decimal"></div>
+<div><label for="pitch">Pitch</label><input id="pitch" type="number" step="0.01" inputmode="decimal"></div>
+<div><label for="ctdi">CTDIvol (mGy)</label><input id="ctdi" type="number" step="0.1" inputmode="decimal"></div>
+<div><label for="dlp">DLP (mGy·cm)</label><input id="dlp" type="number" inputmode="numeric"></div>
+<div><label for="duree" data-i="dur"></label><input id="duree" type="number" step="0.5" inputmode="decimal"></div>
+<div><label for="ref" data-i="ref"></label><input id="ref" type="number" step="0.1" inputmode="decimal"></div>
+</div>
+</section>
+<section>
+<h2 data-i="s5"></h2>
+<p style="margin:0 0 8px;color:var(--mute);font-size:.9rem" data-i="qhint"></p>
+<div class="chk" id="qi">
+<label><input type="checkbox" value="mvt"><span data-i="q1"></span></label>
+<label><input type="checkbox" value="bruit"><span data-i="q2"></span></label>
+<label><input type="checkbox" value="art"><span data-i="q3"></span></label>
+<label><input type="checkbox" value="cent"><span data-i="q4"></span></label>
+<label><input type="checkbox" value="opac"><span data-i="q5"></span></label>
+</div>
+<div class="row">
+<button class="p" id="go" data-i="go"></button>
+<button class="s" id="save" data-i="save"></button>
+<button class="s" id="theme" data-i="theme"></button>
+</div>
+</section>
+<section id="sgs">
+<h2 data-i="g_t"></h2>
+<div class="row" style="margin:0 0 12px"><button class="p" id="sgGo" data-i="g_btn"></button></div>
+<div id="sg" hidden></div>
+</section>
+<section id="imgs">
+<h2 data-i="i_t"></h2>
+<p style="margin:0 0 10px;color:var(--mute);font-size:.9rem" data-i="i_hint"></p>
+<input type="file" id="ifile" accept="image/*">
+<div id="ib" hidden>
+<div class="grid" style="margin-top:12px">
+<div><label data-i="i_lum"></label><input type="range" id="ilum" min="-60" max="60" value="0"></div>
+<div><label data-i="i_con"></label><input type="range" id="icon" min="5" max="25" value="10"></div>
+<div><label data-i="i_den"></label><input type="range" id="iden" min="0" max="3" value="0"></div>
+<div><label data-i="i_sha"></label><input type="range" id="isha" min="0" max="20" value="0"></div>
+</div>
+<div class="two">
+<div><label data-i="i_orig"></label><canvas id="cO"></canvas></div>
+<div><label data-i="i_enh"></label><canvas id="cE"></canvas></div>
+</div>
+<div id="ist" class="note info"></div>
+<div class="row"><button class="s" id="ireset" data-i="i_reset"></button></div>
+</div>
+</section>
+<section id="out" hidden>
+<h2 data-i="res"></h2>
+<div id="res"></div>
+</section>
+<section>
+<h2 data-i="s6"></h2>
+<div id="stats" class="stats"></div>
+<div class="tbl" style="margin-top:12px"><table>
+<thead><tr id="thead"></tr></thead>
+<tbody id="rows"></tbody></table></div>
+<div class="row"><button class="s" id="clear" data-i="clear"></button></div>
+</section>
+</main>
+<p class="foot" data-i="foot"></p>
+<script>
+const $=id=>document.getElementById(id);
+const num=id=>{const v=parseFloat($(id).value);return isNaN(v)?null:v};
+const L={
+fr:{i_t:`7. Images du scanner : visualisation et amélioration`,i_hint:`Les images restent dans votre navigateur (rien n’est envoyé). Anonymisez-les avant de les importer. Outil de démonstration (filtres classiques, pas d’IA), non destiné au diagnostic.`,i_lum:`Luminosité`,i_con:`Contraste`,i_den:`Réduction du bruit`,i_sha:`Netteté`,i_orig:`Originale`,i_enh:`Améliorée`,i_reset:`Réinitialiser`,i_tip:`Touchez une zone homogène (foie, muscle) sur l’image pour mesurer le bruit.`,i_n:(a,b,c,d)=>`Bruit (écart-type) : ${a} → ${b} ; SNR : ${c} → ${d}`,g_t:`6. Suggestion de paramètres (assistant)`,g_hint:`Prototype basé sur des règles simples (IMC, poids, fonction rénale, contexte). Valeurs indicatives : à valider avec le protocole du service et le radiologue. Ne pas utiliser seul pour un vrai patient.`,g_btn:`Suggérer kV, mAs et contraste`,g_egfr:`DFG estimé (mL/min, optionnel)`,g_conc:`Concentration du contraste`,g_mas:`mAs de référence`,g_vol:`Volume de contraste`,g_flow:`Débit d’injection`,g_ep:`Épaisseur de coupe`,g_ph:`Phases`,gm:{minor:`Patient mineur : protocole pédiatrique requis, aucune suggestion automatique.`,nod:`Renseignez l’âge, le poids et la taille pour obtenir une suggestion.`,noc:`Examen sans contraste : aucun volume à injecter.`,lg:`DFG < 30 mL/min : aucun volume suggéré. Avis du radiologue obligatoire avant injection.`,mg:`DFG entre 30 et 45 : discuter du volume et de l’hydratation avec le radiologue.`,ng:`DFG non renseigné : vérifier la fonction rénale avant injection.`,p1:`Portale (≈ 70 s)`,p2:`Artérielle (≈ 30 s) + portale (≈ 70 s)`,why:(v,kv,w,k,c)=>`Raisonnement : IMC ${v} → ${kv} kV ; contraste = ${w} kg × ${k} mgI/kg ÷ ${c} mgI/mL.`},title:`Assistant TAP : optimiser l’examen patient par patient`,sub:`Scanner thoraco-abdomino-pelvien. Saisissez le patient et les paramètres, puis lisez les points de vigilance.`,
+s1:`1. Patient`,code:`Code anonyme`,age:`Âge (ans)`,sex:`Sexe`,w:`Poids (kg)`,h:`Taille (cm)`,imc:`IMC calculé`,
+s2:`2. Contexte clinique`,type:`Type de patient`,urg:`Urgence`,suivi:`Suivi`,patho:`Pathologie / indication`,contrast:`Produit de contraste`,cw:`Avec`,cwo:`Sans`,
+p:[`Bilan d’extension oncologique`,`Suivi sous traitement (oncologie)`,`Polytraumatisme / traumatisme`,`Douleur abdominale aiguë`,`Infection / abcès / sepsis`,`Pathologie thoracique`,`Autre`],
+s3:`3. Checklist avant l’examen`,c1:`Identité du patient vérifiée`,c2:`Poids, taille et âge relevés`,c3:`Protocole adapté à l’indication choisi`,c4:`Créatinine / allergie vérifiées (si contraste)`,c5:`Grossesse écartée / radioprotection appliquée`,c6:`Patient informé, consignes d’apnée expliquées`,
+s4:`4. Paramètres de l’examen`,ep:`Épaisseur de coupe (mm)`,dur:`Durée totale (min)`,ref:`CTDIvol de référence du service (optionnel)`,
+s5:`5. Qualité de l’image`,qhint:`Cochez ce que vous observez. L’outil ne pose pas de diagnostic : il propose la cause technique à vérifier.`,
+q1:`Flou de mouvement ou de respiration`,q2:`Bruit important`,q3:`Artéfacts métalliques ou de bras`,q4:`Mauvais centrage`,q5:`Opacification insuffisante`,
+go:`Analyser ce patient`,save:`Enregistrer`,theme:`Mode clair / sombre`,res:`Analyse`,s6:`Examens enregistrés`,clear:`Tout effacer`,
+th:[`Code`,`Âge`,`IMC`,`Type`,`Pathologie`,`kV`,`mAs`,`Ép.`,`CTDIvol`,`DLP`,`Durée`],empty:`Aucun examen enregistré. Remplissez le formulaire puis appuyez sur « Enregistrer ».`,
+mCt:`CTDIvol moyen`,mDlp:`DLP moyen`,mDur:`Durée moyenne`,mImc:`IMC moyen`,
+needCode:`Saisissez un code anonyme pour enregistrer l’examen.`,confirm:`Effacer tous les examens enregistrés ?`,
+foot:`Les conseils sont indicatifs et généraux. Ils ne remplacent ni le protocole du service, ni l’avis du radiologue ou du physicien médical. Les données restent dans votre navigateur ; utilisez uniquement des codes anonymes.`,
+cat:{n:`normal`,o:`surpoids`},
+m:{obese:v=>`IMC ${v} (obèse) : risque de bruit. Un kV plus élevé et un mAs adapté sont souvent nécessaires ; vérifier que la dose reste justifiée.`,thin:v=>`IMC ${v} (maigre) : un kV plus bas est souvent possible, ce qui réduit la dose et renforce le contraste iodé.`,norm:(v,c)=>`IMC ${v} (${c}) : paramètres standards du protocole en général adaptés.`,noimc:`Renseignez poids et taille pour une adaptation à la morphologie.`,
+minor:`Patient mineur : dose à adapter à la taille, protocole pédiatrique à privilégier, ALARA strict.`,young:`Patient jeune : sensibilité aux rayonnements plus élevée, justifier chaque phase d’acquisition.`,old:`Patient âgé : vérifier la fonction rénale avant contraste, prévoir un positionnement confortable.`,
+urg:`Urgence : privilégier un protocole rapide et un positionnement efficace ; limiter les phases aux besoins de l’indication.`,fol:`Suivi : comparer avec l’examen précédent et garder des paramètres comparables, sauf besoin d’ajustement.`,
+trauma:`Traumatisme : patient souvent peu mobile, vérifier l’absence d’artéfacts (monitorage, drains) et positionner les bras au mieux.`,onco:`Indication oncologique sans contraste : confirmer que c’est voulu (allergie, insuffisance rénale ?).`,
+kvl:kv=>`kV bas (${kv}) chez un patient corpulent : risque de bruit et d’image non diagnostique.`,kvh:kv=>`kV élevé (${kv}) chez un patient mince : dose probablement supérieure au nécessaire.`,
+ep:e=>`Épaisseur de coupe de ${e} mm : peut gêner la détection de petites lésions.`,pi:`Pitch élevé : acquisition rapide, mais surveiller la qualité d’image.`,
+dh:(c,d)=>`CTDIvol ${c} mGy : ${d} % au-dessus de la référence du service. Revoir les paramètres (ALARA).`,dl:(c,d)=>`CTDIvol ${c} mGy : ${d} % sous la référence. Vérifier que la qualité d’image reste suffisante.`,dn:c=>`CTDIvol ${c} mGy : proche de la référence du service.`,dr:`Renseignez la référence du service pour comparer la dose.`,
+du:(d,m,c)=>`Durée ${d} min contre ${m} min en moyenne pour les patients « ${c} » enregistrés.`,
+mvt:`Mouvement : revoir les consignes d’apnée, la contention, la vitesse d’acquisition (pitch, temps de rotation).`,bruit:`Bruit : vérifier le kV, le mAs, la corpulence, le filtre de reconstruction et l’épaisseur de coupe.`,art:`Artéfacts : replacer les bras au-dessus de la tête et retirer les objets métalliques.`,cent:`Centrage : le patient doit être à l’isocentre ; un mauvais centrage modifie la dose et le bruit.`,opac:`Opacification : vérifier le volume, le débit et le délai d’injection, ainsi que la voie veineuse.`,
+chk:n=>`Checklist avant examen : ${n} point(s) non coché(s).`}},
+en:{i_t:`7. CT images: viewing and enhancement`,i_hint:`Images stay in your browser (nothing is uploaded). Anonymise them before importing. Demonstration tool (classic filters, not AI), not for diagnosis.`,i_lum:`Brightness`,i_con:`Contrast`,i_den:`Noise reduction`,i_sha:`Sharpness`,i_orig:`Original`,i_enh:`Enhanced`,i_reset:`Reset`,i_tip:`Tap a uniform area (liver, muscle) on the image to measure noise.`,i_n:(a,b,c,d)=>`Noise (standard deviation): ${a} → ${b}; SNR: ${c} → ${d}`,g_t:`6. Parameter suggestion (assistant)`,g_hint:`Prototype based on simple rules (BMI, weight, renal function, context). Indicative values: validate with the department protocol and the radiologist. Do not use alone for a real patient.`,g_btn:`Suggest kV, mAs and contrast`,g_egfr:`Estimated GFR (mL/min, optional)`,g_conc:`Contrast concentration`,g_mas:`Reference mAs`,g_vol:`Contrast volume`,g_flow:`Injection rate`,g_ep:`Slice thickness`,g_ph:`Phases`,gm:{minor:`Minor patient: a paediatric protocol is required, no automatic suggestion.`,nod:`Enter age, weight and height to get a suggestion.`,noc:`Exam without contrast: no volume to inject.`,lg:`GFR < 30 mL/min: no volume suggested. Radiologist approval required before injection.`,mg:`GFR between 30 and 45: discuss volume and hydration with the radiologist.`,ng:`GFR not entered: check renal function before injection.`,p1:`Portal (≈ 70 s)`,p2:`Arterial (≈ 30 s) + portal (≈ 70 s)`,why:(v,kv,w,k,c)=>`Reasoning: BMI ${v} → ${kv} kV; contrast = ${w} kg × ${k} mgI/kg ÷ ${c} mgI/mL.`},title:`TAP assistant: optimise each patient’s exam`,sub:`Thoraco-abdomino-pelvic CT. Enter the patient and the parameters, then read the points to watch.`,
+s1:`1. Patient`,code:`Anonymous code`,age:`Age (years)`,sex:`Sex`,w:`Weight (kg)`,h:`Height (cm)`,imc:`BMI (calculated)`,
+s2:`2. Clinical context`,type:`Patient type`,urg:`Emergency`,suivi:`Follow-up`,patho:`Condition / indication`,contrast:`Contrast agent`,cw:`With`,cwo:`Without`,
+p:[`Oncologic staging`,`Follow-up under treatment (oncology)`,`Polytrauma / trauma`,`Acute abdominal pain`,`Infection / abscess / sepsis`,`Chest condition`,`Other`],
+s3:`3. Pre-exam checklist`,c1:`Patient identity checked`,c2:`Weight, height and age recorded`,c3:`Protocol matched to the indication`,c4:`Creatinine / allergy checked (if contrast)`,c5:`Pregnancy excluded / radiation protection applied`,c6:`Patient informed, breath-hold explained`,
+s4:`4. Exam parameters`,ep:`Slice thickness (mm)`,dur:`Total duration (min)`,ref:`Department reference CTDIvol (optional)`,
+s5:`5. Image quality`,qhint:`Tick what you see. The tool does not diagnose: it suggests the technical cause to check.`,
+q1:`Motion or breathing blur`,q2:`High noise`,q3:`Metal or arm artifacts`,q4:`Poor centering`,q5:`Insufficient enhancement`,
+go:`Analyse this patient`,save:`Save`,theme:`Light / dark mode`,res:`Analysis`,s6:`Saved exams`,clear:`Clear all`,
+th:[`Code`,`Age`,`BMI`,`Type`,`Condition`,`kV`,`mAs`,`Thick.`,`CTDIvol`,`DLP`,`Duration`],empty:`No saved exam yet. Fill in the form, then press “Save”.`,
+mCt:`Mean CTDIvol`,mDlp:`Mean DLP`,mDur:`Mean duration`,mImc:`Mean BMI`,
+needCode:`Enter an anonymous code to save the exam.`,confirm:`Delete all saved exams?`,
+foot:`Advice is general and indicative. It does not replace the department protocol or the opinion of the radiologist or medical physicist. Data stays in your browser; use anonymous codes only.`,
+cat:{n:`normal`,o:`overweight`},
+m:{obese:v=>`BMI ${v} (obese): risk of noise. A higher kV and a suitable mAs are often needed; check that the dose stays justified.`,thin:v=>`BMI ${v} (underweight): a lower kV is often possible, which reduces dose and boosts iodine contrast.`,norm:(v,c)=>`BMI ${v} (${c}): standard protocol parameters are usually suitable.`,noimc:`Enter weight and height to adapt to body habitus.`,
+minor:`Minor patient: adapt dose to size, prefer a paediatric protocol, strict ALARA.`,young:`Young patient: higher radiosensitivity, justify each acquisition phase.`,old:`Elderly patient: check renal function before contrast, plan a comfortable positioning.`,
+urg:`Emergency: favour a fast protocol and efficient positioning; limit phases to what the indication needs.`,fol:`Follow-up: compare with the previous exam and keep comparable parameters unless adjustment is needed.`,
+trauma:`Trauma: patient often cannot move much; check for artifacts (monitoring, drains) and position the arms as well as possible.`,onco:`Oncologic indication without contrast: confirm this is intended (allergy, renal failure?).`,
+kvl:kv=>`Low kV (${kv}) in a large patient: risk of noise and a non-diagnostic image.`,kvh:kv=>`High kV (${kv}) in a thin patient: dose probably higher than necessary.`,
+ep:e=>`Slice thickness of ${e} mm: may hamper detection of small lesions.`,pi:`High pitch: fast acquisition, but watch image quality.`,
+dh:(c,d)=>`CTDIvol ${c} mGy: ${d}% above the department reference. Review the parameters (ALARA).`,dl:(c,d)=>`CTDIvol ${c} mGy: ${d}% below the reference. Check that image quality remains sufficient.`,dn:c=>`CTDIvol ${c} mGy: close to the department reference.`,dr:`Enter the department reference to compare the dose.`,
+du:(d,m,c)=>`Duration ${d} min versus ${m} min on average for saved “${c}” patients.`,
+mvt:`Motion: review breath-hold instructions, immobilisation and acquisition speed (pitch, rotation time).`,bruit:`Noise: check kV, mAs, patient size, reconstruction kernel and slice thickness.`,art:`Artifacts: raise the arms above the head and remove metal objects.`,cent:`Centering: the patient should be at the isocentre; poor centering changes dose and noise.`,opac:`Enhancement: check injection volume, flow rate and delay, and the venous access.`,
+chk:n=>`Pre-exam checklist: ${n} item(s) not ticked.`}},
+de:{i_t:`7. CT-Bilder: Ansicht und Verbesserung`,i_hint:`Die Bilder bleiben in Ihrem Browser (nichts wird hochgeladen). Vor dem Import anonymisieren. Demonstrationswerkzeug (klassische Filter, keine KI), nicht für die Diagnose.`,i_lum:`Helligkeit`,i_con:`Kontrast`,i_den:`Rauschreduktion`,i_sha:`Schärfe`,i_orig:`Original`,i_enh:`Verbessert`,i_reset:`Zurücksetzen`,i_tip:`Tippen Sie auf einen homogenen Bereich (Leber, Muskel), um das Rauschen zu messen.`,i_n:(a,b,c,d)=>`Rauschen (Standardabweichung): ${a} → ${b}; SNR: ${c} → ${d}`,g_t:`6. Parametervorschlag (Assistent)`,g_hint:`Prototyp auf Basis einfacher Regeln (BMI, Gewicht, Nierenfunktion, Kontext). Richtwerte: mit dem Protokoll der Abteilung und dem Radiologen abstimmen. Nicht allein für echte Patienten verwenden.`,g_btn:`kV, mAs und Kontrastmittel vorschlagen`,g_egfr:`Geschätzte GFR (mL/min, optional)`,g_conc:`Kontrastmittelkonzentration`,g_mas:`Referenz-mAs`,g_vol:`Kontrastmittelvolumen`,g_flow:`Injektionsrate`,g_ep:`Schichtdicke`,g_ph:`Phasen`,gm:{minor:`Minderjähriger Patient: pädiatrisches Protokoll erforderlich, kein automatischer Vorschlag.`,nod:`Alter, Gewicht und Größe eingeben, um einen Vorschlag zu erhalten.`,noc:`Untersuchung ohne Kontrastmittel: kein Volumen zu injizieren.`,lg:`GFR < 30 mL/min: kein Volumen vorgeschlagen. Freigabe durch den Radiologen vor der Injektion erforderlich.`,mg:`GFR zwischen 30 und 45: Volumen und Hydrierung mit dem Radiologen besprechen.`,ng:`GFR nicht angegeben: Nierenfunktion vor der Injektion prüfen.`,p1:`Portalvenös (≈ 70 s)`,p2:`Arteriell (≈ 30 s) + portalvenös (≈ 70 s)`,why:(v,kv,w,k,c)=>`Begründung: BMI ${v} → ${kv} kV; Kontrastmittel = ${w} kg × ${k} mgI/kg ÷ ${c} mgI/mL.`},title:`TAP-Assistent: Untersuchung pro Patient optimieren`,sub:`CT von Thorax, Abdomen und Becken. Patient und Parameter eingeben, dann die Hinweise lesen.`,
+s1:`1. Patient`,code:`Anonymer Code`,age:`Alter (Jahre)`,sex:`Geschlecht`,w:`Gewicht (kg)`,h:`Größe (cm)`,imc:`BMI (berechnet)`,
+s2:`2. Klinischer Kontext`,type:`Patientenart`,urg:`Notfall`,suivi:`Verlaufskontrolle`,patho:`Erkrankung / Indikation`,contrast:`Kontrastmittel`,cw:`Mit`,cwo:`Ohne`,
+p:[`Onkologisches Staging`,`Verlauf unter Therapie (Onkologie)`,`Polytrauma / Trauma`,`Akutes Abdomen`,`Infektion / Abszess / Sepsis`,`Thorakale Erkrankung`,`Andere`],
+s3:`3. Checkliste vor der Untersuchung`,c1:`Identität des Patienten geprüft`,c2:`Gewicht, Größe und Alter erfasst`,c3:`Protokoll passend zur Indikation gewählt`,c4:`Kreatinin / Allergie geprüft (bei Kontrastmittel)`,c5:`Schwangerschaft ausgeschlossen / Strahlenschutz angewendet`,c6:`Patient aufgeklärt, Atemanhalten erklärt`,
+s4:`4. Untersuchungsparameter`,ep:`Schichtdicke (mm)`,dur:`Gesamtdauer (min)`,ref:`Referenz-CTDIvol der Abteilung (optional)`,
+s5:`5. Bildqualität`,qhint:`Kreuzen Sie an, was Sie sehen. Das Tool stellt keine Diagnose: Es nennt die technische Ursache, die zu prüfen ist.`,
+q1:`Bewegungs- oder Atemunschärfe`,q2:`Starkes Rauschen`,q3:`Metall- oder Armartefakte`,q4:`Schlechte Zentrierung`,q5:`Unzureichende Kontrastierung`,
+go:`Diesen Patienten analysieren`,save:`Speichern`,theme:`Hell / Dunkel`,res:`Analyse`,s6:`Gespeicherte Untersuchungen`,clear:`Alles löschen`,
+th:[`Code`,`Alter`,`BMI`,`Art`,`Erkrankung`,`kV`,`mAs`,`Dicke`,`CTDIvol`,`DLP`,`Dauer`],empty:`Noch keine Untersuchung gespeichert. Formular ausfüllen und „Speichern“ drücken.`,
+mCt:`Mittleres CTDIvol`,mDlp:`Mittleres DLP`,mDur:`Mittlere Dauer`,mImc:`Mittlerer BMI`,
+needCode:`Geben Sie einen anonymen Code ein, um die Untersuchung zu speichern.`,confirm:`Alle gespeicherten Untersuchungen löschen?`,
+foot:`Die Hinweise sind allgemein und unverbindlich. Sie ersetzen weder das Protokoll der Abteilung noch die Einschätzung von Radiologe oder Medizinphysiker. Die Daten bleiben in Ihrem Browser; nur anonyme Codes verwenden.`,
+cat:{n:`normal`,o:`übergewichtig`},
+m:{obese:v=>`BMI ${v} (adipös): Rauschrisiko. Oft sind ein höheres kV und ein passendes mAs nötig; prüfen, ob die Dosis gerechtfertigt bleibt.`,thin:v=>`BMI ${v} (untergewichtig): ein niedrigeres kV ist oft möglich, das senkt die Dosis und verstärkt den Jodkontrast.`,norm:(v,c)=>`BMI ${v} (${c}): Standardparameter des Protokolls sind in der Regel geeignet.`,noimc:`Gewicht und Größe eingeben, um an die Statur anzupassen.`,
+minor:`Minderjähriger Patient: Dosis an die Größe anpassen, pädiatrisches Protokoll bevorzugen, striktes ALARA.`,young:`Junger Patient: höhere Strahlenempfindlichkeit, jede Akquisitionsphase rechtfertigen.`,old:`Älterer Patient: Nierenfunktion vor Kontrastmittel prüfen, bequeme Lagerung einplanen.`,
+urg:`Notfall: schnelles Protokoll und effiziente Lagerung bevorzugen; Phasen auf den Bedarf der Indikation begrenzen.`,fol:`Verlauf: mit der Voruntersuchung vergleichen und vergleichbare Parameter beibehalten, außer bei Anpassungsbedarf.`,
+trauma:`Trauma: Patient oft kaum beweglich; auf Artefakte (Monitoring, Drainagen) achten und Arme bestmöglich lagern.`,onco:`Onkologische Indikation ohne Kontrastmittel: prüfen, ob das gewollt ist (Allergie, Niereninsuffizienz?).`,
+kvl:kv=>`Niedriges kV (${kv}) bei kräftigem Patienten: Rauschen und nicht diagnostisches Bild möglich.`,kvh:kv=>`Hohes kV (${kv}) bei schlankem Patienten: Dosis wahrscheinlich höher als nötig.`,
+ep:e=>`Schichtdicke ${e} mm: kann die Erkennung kleiner Läsionen erschweren.`,pi:`Hoher Pitch: schnelle Akquisition, aber Bildqualität beobachten.`,
+dh:(c,d)=>`CTDIvol ${c} mGy: ${d} % über der Referenz der Abteilung. Parameter überprüfen (ALARA).`,dl:(c,d)=>`CTDIvol ${c} mGy: ${d} % unter der Referenz. Prüfen, ob die Bildqualität ausreicht.`,dn:c=>`CTDIvol ${c} mGy: nahe an der Referenz der Abteilung.`,dr:`Referenz der Abteilung eingeben, um die Dosis zu vergleichen.`,
+du:(d,m,c)=>`Dauer ${d} min gegenüber durchschnittlich ${m} min bei gespeicherten „${c}“-Patienten.`,
+mvt:`Bewegung: Atemanweisungen, Fixierung und Akquisitionsgeschwindigkeit (Pitch, Rotationszeit) prüfen.`,bruit:`Rauschen: kV, mAs, Körperumfang, Rekonstruktionskern und Schichtdicke prüfen.`,art:`Artefakte: Arme über den Kopf lagern und Metallgegenstände entfernen.`,cent:`Zentrierung: Der Patient gehört ins Isozentrum; schlechte Zentrierung verändert Dosis und Rauschen.`,opac:`Kontrastierung: Menge, Flussrate und Verzögerung der Injektion sowie den Venenzugang prüfen.`,
+chk:n=>`Checkliste: ${n} Punkt(e) nicht abgehakt.`}},
+ar:{i_t:`7. صور السكانير: العرض والتحسين`,i_hint:`تبقى الصور في متصفحك (لا يُرسل شيء). أخفِ بيانات المريض قبل الاستيراد. أداة تجريبية (مرشحات كلاسيكية وليست ذكاءً اصطناعياً)، وليست للتشخيص.`,i_lum:`السطوع`,i_con:`التباين`,i_den:`تقليل الضجيج`,i_sha:`الحدّة`,i_orig:`الأصلية`,i_enh:`المحسّنة`,i_reset:`إعادة ضبط`,i_tip:`المس منطقة متجانسة (الكبد، العضل) على الصورة لقياس الضجيج.`,i_n:(a,b,c,d)=>`الضجيج (الانحراف المعياري): ${a} ← ${b}؛ SNR: ${c} ← ${d}`,g_t:`6. اقتراح الإعدادات (المساعد)`,g_hint:`نموذج أولي يعتمد على قواعد بسيطة (BMI، الوزن، وظيفة الكلى، السياق). القيم إرشادية: يجب التحقق منها مع بروتوكول المصلحة وطبيب الأشعة. لا يُستعمل وحده مع مريض حقيقي.`,g_btn:`اقترح kV وmAs ومادة التباين`,g_egfr:`معدل الترشيح الكلوي (mL/min، اختياري)`,g_conc:`تركيز مادة التباين`,g_mas:`mAs المرجعي`,g_vol:`حجم مادة التباين`,g_flow:`معدل الحقن`,g_ep:`سُمك الشريحة`,g_ph:`المراحل`,gm:{minor:`مريض قاصر: يلزم بروتوكول الأطفال، ولا اقتراح تلقائي.`,nod:`أدخل العمر والوزن والطول للحصول على اقتراح.`,noc:`فحص بدون تباين: لا يوجد حجم للحقن.`,lg:`معدل الترشيح < 30: لا حجم مقترح. موافقة طبيب الأشعة ضرورية قبل الحقن.`,mg:`معدل الترشيح بين 30 و45: ناقش الحجم والإماهة مع طبيب الأشعة.`,ng:`معدل الترشيح غير مُدخل: تحقق من وظيفة الكلى قبل الحقن.`,p1:`وريدية بابية (≈ 70 ث)`,p2:`شريانية (≈ 30 ث) + وريدية بابية (≈ 70 ث)`,why:(v,kv,w,k,c)=>`التعليل: BMI ${v} ← ${kv} kV؛ مادة التباين = ${w} كغ × ${k} mgI/kg ÷ ${c} mgI/mL.`},title:`مساعد TAP: تحسين الفحص لكل مريض`,sub:`سكانير الصدر والبطن والحوض. أدخل بيانات المريض والإعدادات ثم اقرأ نقاط الانتباه.`,
+s1:`1. المريض`,code:`رمز مجهول`,age:`العمر (سنة)`,sex:`الجنس`,w:`الوزن (كغ)`,h:`الطول (سم)`,imc:`مؤشر كتلة الجسم (محسوب)`,
+s2:`2. السياق السريري`,type:`نوع المريض`,urg:`استعجال`,suivi:`متابعة`,patho:`المرض / دواعي الفحص`,contrast:`مادة التباين`,cw:`مع`,cwo:`بدون`,
+p:[`تقييم انتشار الورم`,`متابعة تحت العلاج (أورام)`,`رضوض متعددة / إصابة`,`ألم بطني حاد`,`عدوى / خراج / إنتان`,`مرض صدري`,`أخرى`],
+s3:`3. قائمة التحقق قبل الفحص`,c1:`التحقق من هوية المريض`,c2:`تسجيل الوزن والطول والعمر`,c3:`اختيار بروتوكول مناسب لدواعي الفحص`,c4:`التحقق من الكرياتينين / الحساسية (عند التباين)`,c5:`استبعاد الحمل / تطبيق الحماية من الإشعاع`,c6:`إعلام المريض وشرح حبس النفس`,
+s4:`4. إعدادات الفحص`,ep:`سُمك الشريحة (مم)`,dur:`المدة الكلية (دقيقة)`,ref:`CTDIvol المرجعي للمصلحة (اختياري)`,
+s5:`5. جودة الصورة`,qhint:`حدّد ما تلاحظه. الأداة لا تشخّص، بل تقترح السبب التقني الذي يجب فحصه.`,
+q1:`تشوش بسبب الحركة أو التنفس`,q2:`ضجيج مرتفع`,q3:`أخطاء صورة (artéfacts) معدنية أو من الذراعين`,q4:`سوء التمركز`,q5:`تباين غير كافٍ`,
+go:`حلّل هذا المريض`,save:`حفظ`,theme:`وضع فاتح / داكن`,res:`التحليل`,s6:`الفحوص المسجّلة`,clear:`مسح الكل`,
+th:[`الرمز`,`العمر`,`BMI`,`النوع`,`المرض`,`kV`,`mAs`,`السُمك`,`CTDIvol`,`DLP`,`المدة`],empty:`لا يوجد فحص مسجّل. املأ النموذج ثم اضغط «حفظ».`,
+mCt:`متوسط CTDIvol`,mDlp:`متوسط DLP`,mDur:`متوسط المدة`,mImc:`متوسط BMI`,
+needCode:`أدخل رمزاً مجهولاً لحفظ الفحص.`,confirm:`هل تريد حذف كل الفحوص المسجّلة؟`,
+foot:`النصائح عامة وإرشادية، ولا تغني عن بروتوكول المصلحة ولا عن رأي طبيب الأشعة أو الفيزيائي الطبي. تبقى البيانات في متصفحك؛ استعمل رموزاً مجهولة فقط.`,
+cat:{n:`عادي`,o:`وزن زائد`},
+m:{obese:v=>`BMI ${v} (سمنة): خطر الضجيج. غالباً يلزم kV أعلى وmAs مناسب؛ تأكد أن الجرعة تبقى مبررة.`,thin:v=>`BMI ${v} (نحافة): يمكن غالباً استعمال kV أقل، مما يقلل الجرعة ويقوّي تباين اليود.`,norm:(v,c)=>`BMI ${v} (${c}): إعدادات البروتوكول العادية تناسب غالباً.`,noimc:`أدخل الوزن والطول لتكييف الإعدادات مع بنية المريض.`,
+minor:`مريض قاصر: كيّف الجرعة مع الحجم، فضّل بروتوكول الأطفال، مع تطبيق صارم لمبدأ ALARA.`,young:`مريض شاب: حساسية أعلى للإشعاع، برّر كل مرحلة استحواذ.`,old:`مريض مسن: تحقق من وظيفة الكلى قبل التباين، وخطّط لوضعية مريحة.`,
+urg:`استعجال: فضّل بروتوكولاً سريعاً وتمركزاً فعالاً، واقتصر على المراحل التي تتطلبها الحالة.`,fol:`متابعة: قارن مع الفحص السابق وأبقِ الإعدادات متقاربة ما لم تدعُ الحاجة لتعديلها.`,
+trauma:`إصابة: المريض غالباً قليل الحركة؛ تحقق من غياب الـ artéfacts (أجهزة المراقبة، الأنابيب) وضع الذراعين بأفضل شكل.`,onco:`دواعٍ أورامية بدون تباين: تأكد أن ذلك مقصود (حساسية، قصور كلوي؟).`,
+kvl:kv=>`kV منخفض (${kv}) عند مريض بدين: خطر الضجيج وصورة غير صالحة للتشخيص.`,kvh:kv=>`kV مرتفع (${kv}) عند مريض نحيف: الجرعة على الأرجح أكبر من اللازم.`,
+ep:e=>`سُمك الشريحة ${e} مم: قد يعيق كشف الآفات الصغيرة.`,pi:`Pitch مرتفع: استحواذ سريع، لكن راقب جودة الصورة.`,
+dh:(c,d)=>`CTDIvol ${c} mGy: أعلى بـ ${d}% من مرجع المصلحة. راجع الإعدادات (ALARA).`,dl:(c,d)=>`CTDIvol ${c} mGy: أقل بـ ${d}% من المرجع. تأكد أن جودة الصورة تبقى كافية.`,dn:c=>`CTDIvol ${c} mGy: قريب من مرجع المصلحة.`,dr:`أدخل مرجع المصلحة لمقارنة الجرعة.`,
+du:(d,m,c)=>`المدة ${d} د مقابل ${m} د في المتوسط للمرضى المسجّلين «${c}».`,
+mvt:`الحركة: راجع تعليمات حبس النفس والتثبيت وسرعة الاستحواذ (pitch، زمن الدوران).`,bruit:`الضجيج: افحص kV وmAs وحجم المريض ومرشح إعادة البناء وسُمك الشريحة.`,art:`Artéfacts: ضع الذراعين فوق الرأس وأزل الأجسام المعدنية.`,cent:`التمركز: يجب أن يكون المريض في مركز الجهاز؛ سوء التمركز يغيّر الجرعة والضجيج.`,opac:`التباين: افحص حجم الحقن ومعدله وتأخيره، والمدخل الوريدي.`,
+chk:n=>`قائمة التحقق: ${n} بند غير مُحدَّد.`}}
+};
+let lang='fr',data=[];
+try{data=JSON.parse(localStorage.getItem('tap_data')||'[]');lang=localStorage.getItem('tap_lang')||'fr'}catch(e){}
+if(!L[lang])lang='fr';
+data=data.filter(d=>d.ctx==='U'||d.ctx==='S');
+const T=()=>L[lang];
+function persist(){try{localStorage.setItem('tap_data',JSON.stringify(data))}catch(e){}}
+function ctx(){return document.querySelector('input[name=ctx]:checked').value}
+const ctxName=c=>c==='U'?T().urg:T().suivi;
+function imc(){const p=num('poids'),t=num('taille');return p&&t?+(p/((t/100)**2)).toFixed(1):null}
+['poids','taille'].forEach(i=>$(i).addEventListener('input',()=>{const v=imc();$('imc').textContent=v?v+' kg/m²':'–'}));
+
+function setLang(l){
+lang=l;try{localStorage.setItem('tap_lang',l)}catch(e){}
+const t=T(),d=document.documentElement;
+d.lang=l;d.dir=l==='ar'?'rtl':'ltr';
+document.querySelectorAll('[data-i]').forEach(e=>e.textContent=t[e.dataset.i]);
+const ps=$('patho'),pi=ps.selectedIndex<0?0:ps.selectedIndex;
+ps.innerHTML=t.p.map((x,i)=>`<option value="${i}">${x}</option>`).join('');ps.selectedIndex=pi;
+const cs=$('contraste'),ci=cs.selectedIndex<0?0:cs.selectedIndex;
+cs.innerHTML=`<option value="1">${t.cw}</option><option value="0">${t.cwo}</option>`;cs.selectedIndex=ci;
+$('thead').innerHTML=t.th.map(x=>`<th>${x}</th>`).join('');
+document.querySelectorAll('#lang button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.l===l));
+table();if(!$('out').hidden)render(false);if(!$('sg').hidden)suggest();if(G)enhance();
+}
+
+function analyse(){
+const t=T(),m=t.m,n=[],add=(c,x)=>n.push([c,x]);
+const age=num('age'),v=imc(),kv=num('kv'),mas=num('mas'),ep=num('ep'),pi=num('pitch'),ct=num('ctdi'),ref=num('ref'),du=num('duree');
+const urg=ctx()==='U',pat=+$('patho').value;
+if(v){if(v>=30)add('warn',m.obese(v));else if(v<18.5)add('info',m.thin(v));else add('ok',m.norm(v,v<25?t.cat.n:t.cat.o))}else add('info',m.noimc);
+if(age!=null){if(age<18)add('bad',m.minor);else if(age<40)add('warn',m.young);else if(age>=75)add('info',m.old)}
+add('info',urg?m.urg:m.fol);
+if(pat===2)add('info',m.trauma);
+if((pat===0||pat===1)&&$('contraste').value==='0')add('warn',m.onco);
+if(kv&&v){if(v>=30&&kv<=100)add('warn',m.kvl(kv));if(v<20&&kv>=140)add('warn',m.kvh(kv))}
+if(ep&&ep>5)add('warn',m.ep(ep));
+if(pi&&pi>1.5)add('info',m.pi);
+if(ct&&ref){const d=Math.round(Math.abs(ct-ref)/ref*100);if(ct>ref*1.2)add('bad',m.dh(ct,d));else if(ct<ref*.8)add('ok',m.dl(ct,d));else add('ok',m.dn(ct))}else if(ct)add('info',m.dr);
+if(du){const s=data.filter(d=>d.ctx===ctx()&&d.duree);if(s.length){const a=s.reduce((x,d)=>x+d.duree,0)/s.length;add(du>a*1.3?'warn':'ok',m.du(du,a.toFixed(1),ctxName(ctx())))}}
+document.querySelectorAll('#qi input:checked').forEach(i=>add('warn',m[i.value]));
+const u=[...document.querySelectorAll('#pre input')].filter(i=>!i.checked).length;
+if(u)add('warn',m.chk(u));
+return n;
+}
+function render(scroll=true){
+$('res').innerHTML=analyse().map(([c,x])=>`<div class="note ${c}">${x}</div>`).join('');
+$('out').hidden=false;if(scroll)$('out').scrollIntoView({behavior:'smooth',block:'start'});
+}
+const mean=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:null;
+const f=(v,d)=>v==null?'–':v.toFixed(d);
+function table(){
+const t=T();
+$('rows').innerHTML=data.map(d=>`<tr><td>${d.code}</td><td>${d.age??'–'}</td><td>${d.imc??'–'}</td><td>${ctxName(d.ctx)}</td><td>${t.p[d.patho]}</td><td>${d.kv??'–'}</td><td>${d.mas??'–'}</td><td>${d.ep??'–'}</td><td>${d.ctdi??'–'}</td><td>${d.dlp??'–'}</td><td>${d.duree??'–'}</td></tr>`).join('')||`<tr><td colspan="11" style="color:var(--mute)">${t.empty}</td></tr>`;
+$('stats').innerHTML=['U','S'].map(c=>{const s=data.filter(d=>d.ctx===c),g=k=>mean(s.map(d=>d[k]).filter(x=>x!=null));
+return `<div class="stat"><b>${ctxName(c)} (${s.length})</b><span>${t.mCt} : ${f(g('ctdi'),1)} mGy</span><span>${t.mDlp} : ${f(g('dlp'),0)} mGy·cm</span><span>${t.mDur} : ${f(g('duree'),1)} min</span><span>${t.mImc} : ${f(g('imc'),1)}</span></div>`}).join('');
+}
+const CFG={kv:[[22,100],[32,120],[999,140]],mas:[[22,'100–130'],[30,'130–170'],[35,'170–220'],[999,'220–300']],mgIkg:450,minV:60,maxV:140};
+function suggest(){
+const t=T(),m=t.gm,w=num('poids'),v=imc(),age=num('age'),g=num('egfr'),conc=+$('conc').value;
+const pat=+$('patho').value,urg=ctx()==='U',wc=$('contraste').value==='1';
+const note=(c,x)=>`<div class="note ${c}">${x}</div>`,card=(l,x)=>`<div class="stat"><span>${l}</span><b style="font-size:1.35rem" dir="ltr">${x}</b></div>`;
+let h='';
+if(age!=null&&age<18)h=note('bad',m.minor);
+else if(!v||!w)h=note('warn',m.nod);
+else{
+const kv=CFG.kv.find(x=>v<x[0])[1],mas=CFG.mas.find(x=>v<x[0])[1];
+let c=card('kV',kv)+card(t.g_mas,mas),n='';
+if(!wc)n+=note('info',m.noc);
+else if(g!=null&&g<30)n+=note('bad',m.lg);
+else{
+const vol=Math.min(CFG.maxV,Math.max(CFG.minV,Math.round(w*CFG.mgIkg/conc/5)*5));
+c+=card(t.g_vol,vol+' mL')+card(t.g_flow,(urg&&pat===2?4:3)+' mL/s');
+if(g==null)n+=note('warn',m.ng);else if(g<45)n+=note('warn',m.mg);
+n+=note('ok',m.why(v,kv,w,CFG.mgIkg,conc));
+}
+c+=card(t.g_ep,urg?'3 mm':'2–3 mm');
+if(wc)c+=card(t.g_ph,pat===2?m.p2:m.p1);
+h=`<div class="stats">${c}</div>`+n;
+}
+$('sg').innerHTML=h+note('info',t.g_hint);$('sg').hidden=false;
+}
+$('sgGo').onclick=suggest;
+let G=null,W=0,H=0,roi=null,tm=null;
+function paint(c,a){const x=c.getContext('2d'),im=x.createImageData(W,H);for(let i=0;i<W*H;i++){const v=Math.max(0,Math.min(255,a[i]));im.data[4*i]=im.data[4*i+1]=im.data[4*i+2]=v;im.data[4*i+3]=255}x.putImageData(im,0,0);if(roi){x.strokeStyle='#ff0';x.lineWidth=2;x.strokeRect(roi.x,roi.y,30,30)}}
+function conv(a,med){const o=new Float32Array(a.length),p=[];for(let y=0;y<H;y++)for(let x=0;x<W;x++){p.length=0;for(let dy=-1;dy<=1;dy++){const yy=Math.min(H-1,Math.max(0,y+dy));for(let dx=-1;dx<=1;dx++)p.push(a[yy*W+Math.min(W-1,Math.max(0,x+dx))])}if(med){p.sort((u,v)=>u-v);o[y*W+x]=p[4]}else o[y*W+x]=p.reduce((s,v)=>s+v,0)/9}return o}
+function st(a){let s=0,q=0;for(let y=roi.y;y<roi.y+30;y++)for(let x=roi.x;x<roi.x+30;x++){const v=a[y*W+x];s+=v;q+=v*v}const m=s/900,sd=Math.sqrt(Math.max(0,q/900-m*m));return [sd,m/(sd||1)]}
+function enhance(){
+if(!G)return;let a=G;const n=+$('iden').value,s=+$('isha').value/10;
+for(let i=0;i<n;i++)a=conv(a,true);
+if(s>0){const b=conv(a,false);a=a.map((v,i)=>v+s*(v-b[i]))}
+const c=+$('icon').value/10,l=+$('ilum').value;
+paint($('cO'),G);paint($('cE'),a.map(v=>(v-128)*c+128+l));
+if(roi){const p=st(G),q=st(a);$('ist').textContent=T().i_n(p[0].toFixed(1),q[0].toFixed(1),p[1].toFixed(1),q[1].toFixed(1))}else $('ist').textContent=T().i_tip;
+}
+function later(){clearTimeout(tm);tm=setTimeout(enhance,120)}
+$('ifile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,768/im.width);W=Math.round(im.width*k);H=Math.round(im.height*k);const t=document.createElement('canvas');t.width=W;t.height=H;const x=t.getContext('2d');x.drawImage(im,0,0,W,H);const d=x.getImageData(0,0,W,H).data;G=new Float32Array(W*H);for(let i=0;i<W*H;i++)G[i]=.299*d[4*i]+.587*d[4*i+1]+.114*d[4*i+2];$('cO').width=$('cE').width=W;$('cO').height=$('cE').height=H;roi=null;$('ib').hidden=false;enhance()};im.src=r.result};r.readAsDataURL(f)};
+['ilum','icon','iden','isha'].forEach(i=>$(i).oninput=later);
+['cO','cE'].forEach(i=>$(i).onclick=e=>{const r=e.target.getBoundingClientRect();const x=(e.clientX-r.left)*W/r.width,y=(e.clientY-r.top)*H/r.height;roi={x:Math.round(Math.max(0,Math.min(W-30,x-15))),y:Math.round(Math.max(0,Math.min(H-30,y-15)))};enhance()});
+$('ireset').onclick=()=>{$('ilum').value=0;$('icon').value=10;$('iden').value=0;$('isha').value=0;roi=null;enhance()};
+$('go').onclick=()=>render();
+$('save').onclick=()=>{const code=$('code').value.trim();
+if(!code){alert(T().needCode);$('code').focus();return}
+data.push({code,age:num('age'),imc:imc(),ctx:ctx(),patho:+$('patho').value,kv:num('kv'),mas:num('mas'),ep:num('ep'),ctdi:num('ctdi'),dlp:num('dlp'),duree:num('duree')});
+persist();table()};
+$('clear').onclick=()=>{if(confirm(T().confirm)){data=[];persist();table()}};
+$('theme').onclick=()=>{const r=document.documentElement;const dark=getComputedStyle(r).getPropertyValue('--bg').trim()==='#0e1a1d';r.setAttribute('data-theme',dark?'light':'dark')};
+document.querySelectorAll('#lang button').forEach(b=>b.onclick=()=>setLang(b.dataset.l));
+document.querySelectorAll('input[name=ctx]').forEach(r=>r.onchange=()=>{if(!$('out').hidden)render(false)});
+setLang(lang);
+</script>
+</body>
+</html>
